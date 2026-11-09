@@ -2082,7 +2082,7 @@ def _polar_2d(a: Array, side: str, method: str, eps: float | None,
     if m >= n and side == "right":
       unitary, posdef, _, _ = qdwh.qdwh(a, is_hermitian=False, eps=eps,
                                          max_iterations=max_iterations)
-    elif m < n and side == "left":
+    elif m <= n and side == "left":
       a = a.T.conj()
       unitary, posdef, _, _ = qdwh.qdwh(a, is_hermitian=False, eps=eps,
                                          max_iterations=max_iterations)
@@ -2090,8 +2090,8 @@ def _polar_2d(a: Array, side: str, method: str, eps: float | None,
       unitary = unitary.T.conj()
     else:
       raise NotImplementedError("method='qdwh' only supports mxn matrices "
-                                "where m < n where side='right' and m >= n "
-                                f"side='left', got {a.shape} with {side=}")
+                                "where m >= n if side='right' and m <= n "
+                                f"if side='left', got {a.shape} with {side=}")
   elif method == "svd":
     u_svd, s_svd, vh_svd = lax_linalg.svd(a, full_matrices=False)
     s_svd = s_svd.astype(u_svd.dtype)

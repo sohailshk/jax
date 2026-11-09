@@ -2307,6 +2307,7 @@ class ScipyLinalgTest(jtu.JaxTestCase):
      for shape, side in [
        ((4, 4), 'right'),  # square, side='right' (m >= n)
        ((5, 3), 'right'),  # tall, side='right' (m > n)
+       ((4, 4), 'left'),   # square, side='left' (m <= n)
        ((3, 5), 'left'),   # wide, side='left' (m < n, qdwh constraint)
      ]
     ],
