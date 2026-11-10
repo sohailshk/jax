@@ -1366,7 +1366,7 @@ class BCOOTest(sptu.SparseTestCase):
       ],
       [
           dict(dense_shapes=shapes, dense_perm=perm)
-          for shapes in [[(), ()]]  # TODO(jakevdp) add support for dense shapes
+          for shapes in [[(), ()]]  # dense shapes are covered by test_bcoo_reshape_batch_and_dense
           for perm in itertools.permutations(range(len(shapes[0])))
       ],
       dtype=jtu.dtypes.numeric,
@@ -1410,6 +1410,35 @@ class BCOOTest(sptu.SparseTestCase):
     y = sparse.BCOO((x.data[:1], x.indices), shape=x.shape)
     with self.assertRaisesRegex(NotImplementedError, "reshape of arrays with broadcasted batch dimensions."):
       y.reshape(2, 3, 2)
+
+  @jtu.sample_product(
+      [
+          dict(shape=shape, new_sizes=new_sizes, n_batch=n_batch, n_dense=n_dense)
+          for shape, new_sizes, n_batch, n_dense in [
+              ((2, 3, 4, 5), (2, 3, 4, 5), 1, 1),
+              ((2, 3, 4, 5), (2, 12, 5), 1, 1),
+              ((2, 3, 4, 5), (2, 3, 2, 2, 5), 1, 1),
+              ((2, 3, 4, 5), (2, 3, 4, 5, 1), 1, 1),
+              ((2, 3, 4, 5), (2, 3, 4, 1, 5), 1, 1),
+              ((2, 3, 4, 5), (2, 3, 4, 5), 2, 1),
+              ((2, 3, 4, 6), (2, 3, 4, 2, 3), 2, 1),
+              ((2, 3, 4, 5), (1, 2, 3, 4, 5), 0, 1),
+              ((2, 3, 4, 5), (2, 3, 4, 5), 1, 2),
+              ((2, 2), (1, 2, 1, 2), 0, 1),
+          ]
+      ],
+      dtype=jtu.dtypes.floating,
+  )
+  def test_bcoo_reshape_batch_and_dense(self, shape, new_sizes, n_batch, n_dense, dtype):
+    # Regression test: reshapes of arrays with dense dimensions, including ones
+    # that also have batch dimensions or target dimensions of size 1.
+    rng = sptu.rand_bcoo(self.rng(), n_batch=n_batch, n_dense=n_dense)
+    args_maker = lambda: [rng(shape, dtype)]
+    sparse_func = partial(sparse.bcoo_reshape, new_sizes=new_sizes)
+    dense_func = partial(lax.reshape, new_sizes=new_sizes)
+
+    self._CheckAgainstDense(dense_func, sparse_func, args_maker)
+    self._CheckGradsSparse(dense_func, sparse_func, args_maker)
 
   @jtu.sample_product(
       [
