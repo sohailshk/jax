@@ -347,6 +347,19 @@ class JetTest(jtu.JaxTestCase):
   @jtu.skip_on_devices("tpu")
   def test_rem(self):         self.binary_check(lax.rem, lims=[0.8, 4.0])
   @jtu.skip_on_devices("tpu")
+  def test_rem_negative(self):
+    # lax.rem rounds the quotient toward zero, so negative operands matter.
+    self.binary_check(lax.rem, lims=([-4.0, -0.8], [0.8, 4.0]))
+    self.binary_check(lax.rem, lims=([0.8, 4.0], [-4.0, -0.8]))
+  @jtu.skip_on_devices("tpu")
+  def test_rem_int_operand(self):
+    # Integer primals must not go through floor/sign.
+    f = lambda x: lax.rem(x.astype(jnp.int32), 3)
+    with jax.numpy_dtype_promotion('standard'):  # jet's factorial scaling
+      y, _ = jet(f, (jnp.array([-7., 7., 9.]),), ([jnp.ones(3)],))
+    self.assertArraysEqual(y, jnp.array([-1, 1, 0], dtype='int32'))
+
+  @jtu.skip_on_devices("tpu")
   def test_complex(self):     self.binary_check(lax.complex)
   @jtu.skip_on_devices("tpu")
   def test_sub(self):         self.binary_check(lambda x, y: x - y)
