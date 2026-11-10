@@ -69,6 +69,12 @@ When releasing, please add the new-release-boilerplate to docs/pallas/CHANGELOG.
     direct evaluation of only the nth bessel function.
 
 * Changes
+  * {func}`jax.numpy.linalg.matrix_rank` now treats `rtol` as a tolerance
+    relative to the largest singular value, as documented and as in NumPy;
+    previously it was compared directly against the singular values, and `tol`
+    was an alias of `rtol`. `tol` is now an absolute threshold, as in NumPy.
+    To keep an absolute threshold, pass `tol=` instead of `rtol=` (or the
+    second positional argument).
   * Mixed real and complex {func}`jax.numpy.add`, {func}`jax.numpy.subtract`,
     {func}`jax.numpy.multiply`, and {func}`jax.numpy.true_divide`
     (`complex / real`) no longer convert the real input to complex before
