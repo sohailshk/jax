@@ -441,6 +441,15 @@ class JetTest(jtu.JaxTestCase):
 
   @unittest.skipIf(jtu.is_test_rbe() and jtu.is_gil_disabled() and jtu.is_tsan(),
                    "Consumes too much RAM under FT TSAN: b/456211935")
+  def test_scatter_add_at(self):
+    # Forward use of scatter-add, as in x.at[idx].add(y).
+    def f(x):
+      return jnp.zeros(4).at[jnp.array([0, 2, 2])].add(x[:3] ** 2)
+
+    x = np.arange(1., 5.)
+    series = [np.ones(4), np.arange(4.) / 3., np.zeros(4)]
+    self.check_jet(f, (x,), (series,), rtol=1e-3)
+
   def test_scatter_add(self):
     # very basic test from https://github.com/jax-ml/jax/issues/5365
     def f(x):
