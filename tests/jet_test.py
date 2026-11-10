@@ -461,6 +461,22 @@ class JetTest(jtu.JaxTestCase):
 
     self.check_jet(h, (0.,), ([1., 2., 3.],), rtol=1e-3)
 
+  def test_scatter_add_at(self):
+    # Forward use of scatter-add, as in x.at[idx].add(y).
+    def f(x):
+      return jnp.zeros(4).at[jnp.array([0, 2, 2])].add(x[:3] ** 2)
+
+    x = np.arange(1., 5.)
+    series = [np.ones(4), np.arange(4.) / 3., np.zeros(4)]
+    self.check_jet(f, (x,), (series,), rtol=1e-3)
+
+  def test_scatter_add_from_grad_of_gather(self):
+    # The transpose of a gather (fancy indexing) is a scatter-add.
+    f = jax.grad(lambda x: (x[jnp.array([0, 2])] ** 3).sum())
+    x = np.arange(1., 4.)
+    series = [np.ones(3), np.arange(3.) / 3., np.zeros(3)]
+    self.check_jet(f, (x,), (series,), rtol=1e-3)
+
   def test_stack(self):
     order = 3
     rng = self.rng()
