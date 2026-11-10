@@ -457,7 +457,18 @@ def_deriv(lax.asinh_p, lambda x: lax_internal._asinh_jvp(lax_internal._ones(x), 
 def_comp(lax.acosh_p, lambda x: lax.log(x + lax.sqrt(x - 1) * lax.sqrt(x + 1)))
 def_comp(lax.atanh_p, lambda x: 0.5 * lax.log(lax.div(1 + x, 1 - x)))
 def_comp(lax.erfc_p, lambda x: 1 - lax.erf(x))
-def_comp(lax.rem_p, lambda x, y: x - y * lax.floor(x / y))
+def _rem_rule(primals_in, series_in):
+  # rem(x, y) = x - y * trunc(x / y), where trunc(x / y) is locally constant.
+  # Note that lax.rem rounds the quotient toward zero (like C's fmod), unlike
+  # the floor-based jnp.remainder.
+  x, y = primals_in
+  primal_out = lax.rem(x, y)
+  q = lax.div(x, y)
+  trunc_q = lax.mul(lax.sign(q), lax.floor(lax.abs(q)))
+  series_out = [lax.sub(x_k, lax.mul(trunc_q, y_k))
+                for x_k, y_k in zip(*series_in)]
+  return primal_out, series_out
+jet_rules[lax.rem_p] = _rem_rule
 def_comp(lax.clamp_p, lambda a, x, b: lax.min(lax.max(a, x), b))
 
 

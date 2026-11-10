@@ -347,6 +347,11 @@ class JetTest(jtu.JaxTestCase):
   @jtu.skip_on_devices("tpu")
   def test_rem(self):         self.binary_check(lax.rem, lims=[0.8, 4.0])
   @jtu.skip_on_devices("tpu")
+  def test_rem_negative(self):
+    # lax.rem rounds the quotient toward zero, so negative operands matter.
+    self.binary_check(lax.rem, lims=([-4.0, -0.8], [0.8, 4.0]))
+    self.binary_check(lax.rem, lims=([0.8, 4.0], [-4.0, -0.8]))
+  @jtu.skip_on_devices("tpu")
   def test_complex(self):     self.binary_check(lax.complex)
   @jtu.skip_on_devices("tpu")
   def test_sub(self):         self.binary_check(lambda x, y: x - y)
