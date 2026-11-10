@@ -84,6 +84,11 @@ When releasing, please add the new-release-boilerplate to docs/pallas/CHANGELOG.
     boolean outputs, which is much faster for long axes ({jax-issue}`#28097`).
 
 * Bug fixes
+  * {func}`jax.numpy.linalg.matrix_rank` now treats `rtol` as a tolerance
+    relative to the largest singular value, as documented and as in NumPy;
+    previously it was compared directly against the singular values. `tol`
+    remains an absolute tolerance. Passing a scalar tolerance for a batched
+    input no longer requires rank promotion.
   * {func}`jax.scipy.linalg.polar` with `method="qdwh"` now honors
     `max_iterations` and accepts `eps`, as documented; previously
     `max_iterations` was silently ignored and any `eps` raised a `ValueError`.

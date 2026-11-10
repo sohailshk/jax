@@ -434,8 +434,9 @@ def matrix_rank(
       floating point precision of the input.
     hermitian: if True, then the input is assumed to be Hermitian, and a more
       efficient algorithm is used (default: False)
-    tol: alias of the ``rtol`` argument present for backward compatibility.
-      Only one of `rtol` or `tol` may be specified.
+    tol: optional array of shape ``(...)`` specifying an absolute tolerance:
+      singular values smaller than `tol` are considered to be zero. Only one of
+      `rtol` or `tol` may be specified.
 
   Returns:
     array of shape ``a.shape[-2]`` giving the matrix rank.
@@ -457,19 +458,19 @@ def matrix_rank(
     Array(1, dtype=int32)
   """
   M = ensure_arraylike("jnp.linalg.matrix_rank", M)
-  if tol is not None:
-    if rtol is not None:
-      raise ValueError("matrix_rank: only one of tol or rtol may be specified.")
-    rtol = tol
-  del tol
+  if tol is not None and rtol is not None:
+    raise ValueError("matrix_rank: only one of tol or rtol may be specified.")
   M, = promote_dtypes_inexact(M)
   if M.ndim < 2:
     return (M != 0).any().astype(np.int32)
   S = svd(M, full_matrices=False, compute_uv=False, hermitian=hermitian)
-  if rtol is None:
-    rtol = S.max(-1) * np.max(M.shape[-2:]).astype(S.dtype) * jnp.finfo(S.dtype).eps
-  rtol = jnp.expand_dims(rtol, np.ndim(rtol))
-  return reductions.sum(S > rtol, axis=-1)
+  if tol is None:
+    # Relative tolerance, as in numpy.linalg.matrix_rank.
+    if rtol is None:
+      rtol = np.max(M.shape[-2:]).astype(S.dtype) * jnp.finfo(S.dtype).eps
+    tol = S.max(-1) * rtol
+  tol = jnp.broadcast_to(tol, S.shape[:-1])[..., np.newaxis]
+  return reductions.sum(S > tol, axis=-1)
 
 
 def _slogdet_1x1(a: Array) -> tuple[Array, Array]:

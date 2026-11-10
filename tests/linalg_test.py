@@ -1225,6 +1225,35 @@ class NumpyLinalgTest(jtu.JaxTestCase):
     )
 
   @jtu.sample_product(
+    shape=[(4, 4), (6, 3), (2, 5, 5)],
+    kwarg=['rtol', 'tol'],
+    hermitian=[False, True],
+  )
+  def testMatrixRankExplicitTolerance(self, shape, kwarg, hermitian):
+    # `rtol` is relative to the largest singular value, `tol` is absolute.
+    if hermitian and shape[-1] != shape[-2]:
+      self.skipTest("hermitian requires square matrices")
+    rng = jtu.rand_default(self.rng())
+    def args_maker():
+      a = rng(shape, np.float32)
+      if hermitian:
+        a = (a + T(a)) / 2
+      return [a]
+    for value in [0.1, 0.5, 1.0, 3.0]:
+      np_fn = partial(np.linalg.matrix_rank, hermitian=hermitian, **{kwarg: value})
+      jnp_fn = partial(jnp.linalg.matrix_rank, hermitian=hermitian, **{kwarg: value})
+      self._CheckAgainstNumpy(np_fn, jnp_fn, args_maker, check_dtypes=False)
+      self._CompileAndCheck(jnp_fn, args_maker, check_dtypes=False)
+
+  def testMatrixRankBatchedTolerance(self):
+    a = jnp.stack([jnp.diag(jnp.array([10., 1., 0.1])),
+                   jnp.diag(jnp.array([2., 1., 0.1]))])
+    self.assertArraysEqual(
+        jnp.linalg.matrix_rank(a, rtol=jnp.array([0.05, 0.3])), jnp.array([2, 2]))
+    self.assertArraysEqual(
+        jnp.linalg.matrix_rank(a, tol=jnp.array([0.05, 1.5])), jnp.array([3, 1]))
+
+  @jtu.sample_product(
     shapes=[
       [(3, ), (3, 1)],  # quick-out codepath
       [(1, 3), (3, 5), (5, 2)],  # multi_dot_three codepath
