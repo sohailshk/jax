@@ -244,6 +244,36 @@ class LaxBackedScipySignalTests(jtu.JaxTestCase):
     self._CheckAgainstNumpy(osp_fun, jsp_fun, args_maker, rtol=tol, atol=tol)
     self._CompileAndCheck(jsp_fun, args_maker, rtol=tol, atol=tol)
 
+  @jtu.sample_product(
+    [dict(shape=shape, nperseg=nperseg, noverlap=noverlap, timeaxis=timeaxis)
+      for shape, nperseg, noverlap, timeaxis in stft_test_shapes
+    ],
+    dtype=jtu.dtypes.floating,
+  )
+  def testStftCallableDetrendAgainstNumpy(self, *, shape, dtype, nperseg,
+                                          noverlap, timeaxis):
+    # The result depends on the layout of the segments passed to `detrend`.
+    def detrend(d):
+      w = np.arange(d.size).reshape(d.shape) % 5 + 1
+      return d * w.astype(d.dtype)
+
+    kwds = dict(nperseg=nperseg, noverlap=noverlap, axis=timeaxis,
+                detrend=detrend)
+
+    def osp_fun(x):
+      return osp_signal.stft(x, **kwds)[2].astype(_complex_dtype(dtype))
+    def jsp_fun(x):
+      return jsp_signal.stft(x, **kwds)[2]
+    tol = {np.complex64: 1e-5, np.complex128: 1e-12}
+    if jtu.test_device_matches(['tpu']):
+      tol = _TPU_FFT_TOL
+
+    rng = jtu.rand_default(self.rng())
+    args_maker = lambda: [rng(shape, dtype)]
+
+    self._CheckAgainstNumpy(osp_fun, jsp_fun, args_maker, rtol=tol, atol=tol)
+    self._CompileAndCheck(jsp_fun, args_maker, rtol=tol, atol=tol)
+
   # Tests with `average == 'median'`` is excluded from `testCsd*`
   # due to the issue:
   #   https://github.com/scipy/scipy/issues/15601
