@@ -1125,6 +1125,15 @@ class JaxNumpyReducerTests(jtu.JaxTestCase):
     self._CheckAgainstNumpy(np_fun, jnp_fun, args_maker)
     self._CompileAndCheck(jnp_fun, args_maker)
 
+  @jtu.sample_product(dtype=int_dtypes + unsigned_dtypes, include_initial=[False, True])
+  def testCumulativeProdIntegerPromotion(self, dtype, include_initial):
+    rng = jtu.rand_default(self.rng())
+    args_maker = lambda: [rng((6,), dtype)]
+    np_fun = partial(np.cumulative_prod, include_initial=include_initial)
+    jnp_fun = partial(jnp.cumulative_prod, include_initial=include_initial)
+    self._CheckAgainstNumpy(np_fun, jnp_fun, args_maker)
+    self._CompileAndCheck(jnp_fun, args_maker)
+
   @jtu.sample_product(
     op=['sum', 'prod'],
     dtype=['float16', 'bfloat16'],

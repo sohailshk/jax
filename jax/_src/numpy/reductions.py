@@ -2560,7 +2560,8 @@ def cumulative_prod(
   axis = canonicalize_axis(axis, x.ndim)
   if dtype is not None:
     dtype = dtypes.check_and_canonicalize_user_dtype(dtype)
-  out = _cumulative_reduction("cumulative_prod", control_flow.cumprod, x, axis, dtype)
+  out = _cumulative_reduction("cumulative_prod", control_flow.cumprod, x, axis,
+                              dtype, promote_integers=True)
   if include_initial:
     zeros_shape = list(x.shape)
     zeros_shape[axis] = 1

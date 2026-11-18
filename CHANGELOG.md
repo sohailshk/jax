@@ -88,6 +88,10 @@ When releasing, please add the new-release-boilerplate to docs/pallas/CHANGELOG.
     {func}`jax.numpy.logical_xor`, {func}`jax.numpy.maximum` and
     {func}`jax.numpy.minimum` now uses a parallel prefix scan for integer and
     boolean outputs, which is much faster for long axes ({jax-issue}`#28097`).
+  * {func}`jax.numpy.cumulative_prod` now promotes integer inputs narrower
+    than the default integer type to the default (unsigned) integer type
+    when `dtype` is not specified, matching {func}`jax.numpy.cumulative_sum`
+    and the Python Array API standard. Previously it kept the input dtype.
 
 * Bug fixes
   * {func}`jax.scipy.linalg.polar` with `method="qdwh"` now honors
